@@ -8,6 +8,8 @@
 
 #import <UIKit/UIKit.h>
 
-@interface Quiz6MasterViewController : UITableViewController
+@interface Quiz6MasterViewController : UITableViewController <UITableViewDelegate> {
+    NSMutableArray *tasks;
+};
 
 @end

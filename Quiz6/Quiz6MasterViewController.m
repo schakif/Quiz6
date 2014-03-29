@@ -7,11 +7,11 @@
 //
 
 #import "Quiz6MasterViewController.h"
-
+#import "Tasks.h"
 #import "Quiz6DetailViewController.h"
 
 @interface Quiz6MasterViewController () {
-    NSMutableArray *_objects;
+    
 }
 @end
 
@@ -32,6 +32,10 @@
     self.navigationItem.rightBarButtonItem = addButton;
 }
 
+- (void) viewWillAppear:(BOOL)animated {
+    [[self tableView] reloadData];
+}
+
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
@@ -40,12 +44,21 @@
 
 - (void)insertNewObject:(id)sender
 {
-    if (!_objects) {
-        _objects = [[NSMutableArray alloc] init];
+    if (!tasks) {
+        tasks = [[NSMutableArray alloc] init];
     }
-    [_objects insertObject:[NSDate date] atIndex:0];
+    
+    Tasks *task = [[Tasks alloc] init];
+    [task setTaskName:[NSString stringWithFormat:@"New Task"]];
+    [task setUrgency:5];
+    [task setDueDate:[NSDate date]];
+    [tasks addObject:task];
+    
+    //[tasks insertObject:[NSDate date] atIndex:0];
     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:0 inSection:0];
     [self.tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+    
+
 }
 
 #pragma mark - Table View
@@ -57,16 +70,43 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return _objects.count;
+    return tasks.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"Cell" forIndexPath:indexPath];
 
-    NSDate *object = _objects[indexPath.row];
-    cell.textLabel.text = [object description];
+    Tasks *t = [tasks objectAtIndex:[indexPath row]];
+    [cell.textLabel setText:[t taskName]];
+    
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateStyle:NSDateFormatterLongStyle];
+    
+    UIColor *taskColor = [UIColor colorWithRed:t.urgency/10.0 green:1.0-(t.urgency/10.0) blue:0.0 alpha:0.5];
+    //[cell.contentView setBackgroundColor:taskColor];
+    [cell.detailTextLabel setTextColor:taskColor];
+    [cell.textLabel setTextColor:taskColor];
+    
+    [cell.detailTextLabel setText:[NSString stringWithFormat:@"%@ (%i)", [dateFormatter stringFromDate:t.dueDate], (int) t.urgency]];
+    
     return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    Quiz6DetailViewController *detailViewController = [[Quiz6DetailViewController alloc] init];
+    UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:detailViewController];
+    
+    [detailViewController setDismissBlock:^{
+        [[self tableView] reloadData];
+    }];
+    
+    [navController setModalPresentationStyle:UIModalPresentationFullScreen];
+    //Different animation styles
+    [navController setModalTransitionStyle:UIModalTransitionStyleCrossDissolve];
+    
+    [self presentViewController:navController animated:YES completion:nil];
+    
 }
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
@@ -78,7 +118,7 @@
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
-        [_objects removeObjectAtIndex:indexPath.row];
+        [tasks removeObjectAtIndex:indexPath.row];
         [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
     } else if (editingStyle == UITableViewCellEditingStyleInsert) {
         // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view.
@@ -101,12 +141,19 @@
 }
 */
 
+
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
     if ([[segue identifier] isEqualToString:@"showDetail"]) {
         NSIndexPath *indexPath = [self.tableView indexPathForSelectedRow];
-        NSDate *object = _objects[indexPath.row];
-        [[segue destinationViewController] setDetailItem:object];
+        
+        //NSDate *object = tasks[indexPath.row];
+        //[[segue destinationViewController] setDetailItem:object];
+        
+        Quiz6DetailViewController *destViewController = segue.destinationViewController;
+        Tasks *t = [tasks objectAtIndex:[indexPath row]];
+        destViewController.task = t;
+        
     }
 }
 
